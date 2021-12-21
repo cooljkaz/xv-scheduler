@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; font-src 'self' data:;">
+    <title>XV Scheduler</title>
+    <link href="node_modules/@huseyinkozan/fomantic-ui-css-offline/dist/semantic.min.css" rel="stylesheet">
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="node_modules/fomantic-ui/dist/semantic.min.js"></script>
+    <script src="node_modules/sortablejs/Sortable.min.js"></script>
+    <link href="./styles.css" rel="stylesheet">
+  </head>
+  <body>
+
+
+    <div>
+      
+      <div class="ui three column grid">
+        <div class="row">
+          <div class="left floated column">
+            <div class="ui segment">
+
+              <div id="VixenHeader" class="ui grey inverted segment">
+                <h4 class="ui inverted header">
+                  <img class="ui circular image" src="./images/vixen-logo.png">
+                  <div class="content">
+                    Vixen
+                    <div class="sub header small">Status: <span id="VixenStatus">Waiting...</span></div>
+                  </div>
+                </h4>
+              </div>
+              
+              <div>
+                <table class="ui grey selectable inverted table">
+                  <thead>
+                    <tr>
+                      <th>Available Sequences</th>
+                    </tr>
+                  </thead>
+                  <tbody id="VixenSequences">
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+          <div class="left floated column">
+
+            <div class="ui segment">
+              <div id="XlightsHeader" class="ui grey inverted segment">
+                <h4 class="ui inverted header">
+                  <img class="ui circular image" src="./images/xLights_nutcracker.png">
+                  <div class="content">
+                    xLights
+                    <div class="sub header small">Status: <span id="XlightsStatus">Waiting...</span></div>
+                  </div>
+                </h4>
+              </div>
+              <div>
+                <table class="ui grey selectable inverted table">
+                  <thead>
+                    <tr>
+                      <th>Available Sequences</th>
+                    </tr>
+                  </thead>
+                  <!--
+                    
+                    <tr class="blue">
+                      <td><i class="volume up icon"></i> Sequence 1</td> 
+                    </tr>
+
+                  -->
+                  <tbody id="XlightsSequences"></tbody>
+                </table>
+
+              </div>
+
+            </div>
+
+          </div>
+          <div class="right floated column">
+
+            <table class="ui blue selectable inverted table">
+              <thead>
+                <tr>
+                  <th>My Playlist</th>
+                </tr>
+              </thead>
+              <tbody id="Playlist">
+              </tbody>
+            </table>
+            <button id="Start">Start Playlist</button>
+
+            <button id="GlobalStatus">Global Status</button>
+            <button id="XlightsStatus">Xlight Status</button>
+        
+            <button id="VixenStatus">Vixen Status</button>
+        
+            <button id="GetPlaylist">Get Playlist</button>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <script src="./index.js"></script>
+    <script src="./renderer.js"></script>
+  </body>
+</html>

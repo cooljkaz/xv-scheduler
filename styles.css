@@ -5,3 +5,62 @@
     margin: 0;
     width: 100%;
   }
+
+  .ui.table thead tr:first-child > th {
+    position: sticky !important;
+    top: 0;
+    z-index: 2;
+}
+
+.day-button {
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  font-size: 10px;
+  font-weight: 500;
+  -webkit-border-radius: 50%;
+  border-radius: 50%;
+  background-color: #f1f3f4;
+  color: #80868b;
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.day-button.selected {
+  color: white;
+  background-color: #1a73e8;
+}
+
+.ui input.ui-timepicker-input {
+    width:5rem;
+    margin-right:1rem;
+    display:inline-block;
+}
+
+.available .sequence-entry {
+  background:rgb(118, 118, 118);
+}
+
+.sequence-entry .delete {
+  display:none;
+}
+
+.sequence-entry .add {
+  visibility:hidden;
+}
+
+#Playlist .sequence-entry:hover .delete {
+  display:inline-block;
+}
+
+.available .sequence-entry:hover .add {
+  visibility: visible;
+}

@@ -1,10 +1,18 @@
 const {app, net, BrowserWindow, ipcMain} = require('electron')
+const storage = require('electron-json-storage');
+
 const xlights = require('./xlights');
 const vixen = require('./vixen');
 const path = require('path');
 
-let state = 'stopped';
+let CONFIG, PLAYLIST, SCHEDULE = false;
+let STATE = 'stopped';
+
 let checkTimer = false;
+var currIndex = 0;
+var currPlaylist = false;
+var currSchedule = false;
+
 
 var config = {
     network: {
@@ -15,84 +23,14 @@ var config = {
     },
     schedules: [
         {
-            daysOfWeek: [1,2,3,4,5,6,7],
-            start: "17:00",
+            daysOfWeek: [1,3,5,6,0],
+            start: "15:00",
             end: "22:00",
-            playlistId: "Default"
+            playlistId: "Default",
+            enabled: false
         }
-    ],
-    playlists: [{
-        id: "Default",
-        sequences: [
-            {
-                player: 'xlights',
-                sequence: {
-                     "name": "Jingle Bells",
-                     "data": {
-                         "showid": 1,
-                         "stepid": 0
-                     }
-                }
-             },
-             {
-                player: 'vixen',
-                sequence:  {
-                    "name": "Second",
-                    "data": {
-                         "Name": "Second",
-                         "FileName": "C:\\Users\\Owner\\OneDrive\\Documents\\Vixen 3\\Sequence\\Second.tim"
-                    }
-                }
-             },
-             {
-                player: 'vixen',
-                sequence:  {
-                    "name": "First",
-                    "data": {
-                         "Name": "First",
-                         "FileName": "C:\\Users\\Owner\\OneDrive\\Documents\\Vixen 3\\Sequence\\First.tim"
-                    }
-                }
-             }
-        ]
-    }]
+    ]
 }
-
-var playlist = [
-    {
-       player: 'xlights',
-       sequence: {
-            "name": "Jingle Bells",
-            "data": {
-                "showid": 1,
-                "stepid": 0
-            }
-       }
-    },
-    {
-       player: 'vixen',
-       sequence:  {
-           "name": "Second",
-           "data": {
-                "Name": "Second",
-                "FileName": "C:\\Users\\Owner\\OneDrive\\Documents\\Vixen 3\\Sequence\\Second.tim"
-           }
-       }
-    },
-    {
-       player: 'vixen',
-       sequence:  {
-           "name": "First",
-           "data": {
-                "Name": "First",
-                "FileName": "C:\\Users\\Owner\\OneDrive\\Documents\\Vixen 3\\Sequence\\First.tim"
-           }
-       }
-    }
- ];
-
- var currIndex = 0;
-
  
 function createWindow () {
   // Create the browser window.
@@ -119,32 +57,34 @@ function createWindow () {
 app.whenReady().then(() => {
 
 
-  createWindow();
-  
-  ipcMain.on('play-next', (e) => {
-    currIndex = (currIndex + 1) % config.playlists[0].sequences.length;
-    PlayIndex(currIndex, function(response) {
-        e.sender.send('play-reply', response);
-        CheckStatus();
-    });
-  });
+    createWindow();
 
-  ipcMain.on('play', (e, idx) => {
-    console.log('Playing sequence.');
-    PlayIndex(idx, function(response) {
-        e.sender.send('play-reply', response);
-        CheckStatus();
+    Init();
+
+    ipcMain.on('play-next', (e) => {
+        currIndex = (currIndex + 1) % currPlaylist.length;
+        PlayIndex(currIndex, function(response) {
+            e.sender.send('play-reply', response);
+            CheckStatus();
+        });
     });
-  });
+
+    ipcMain.on('play', (e, idx) => {
+        console.log('Playing sequence.');
+        PlayIndex(idx, function(response) {
+            e.sender.send('play-reply', response);
+            CheckStatus();
+        });
+    });
 
   
   ipcMain.on('stop', (e, graceful) => {
     console.log('Stopping sequence.');
 
     if(graceful) {
-        state = 'stopping';
+        STATE = 'stopping';
     } else {;
-        state = 'stopped';
+        STATE = 'stopped';
         // stop current sequence
     }
     
@@ -159,6 +99,53 @@ app.whenReady().then(() => {
     })
 
   });
+
+  ipcMain.on('get-schedules', (e) => {
+
+    var schedules = storage.getSync('xv-scheduler-schedules');
+    if(schedules && schedules[0]) {
+        currSchedule = schedules[0];
+    }
+    e.sender.send('get-schedules-reply', schedules);
+
+  });
+
+  ipcMain.on('save-schedules', (e, schedules) => {
+    
+    storage.set('xv-scheduler-schedules', schedules, function(error) {
+        e.sender.send('save-schedules-reply', error);
+    });
+
+    if(schedules && schedules[0]) {
+        if(schedules[0].enabled) {
+            if(STATE != 'playing') {
+                STATE = 'waiting';
+            } 
+        } else {
+            STATE = 'stopped';
+        }
+        currSchedule = schedules[0];
+    }
+
+    CheckStatus();
+
+  });
+
+
+  ipcMain.on('get-playlist', (e) => {
+    currPlaylist = storage.getSync('xv-scheduler-playlist');
+    e.sender.send('get-playlist-reply', currPlaylist);
+  });
+
+  ipcMain.on('save-playlist',(e, playlist) => {
+    currPlaylist = playlist;
+    storage.set('xv-scheduler-playlist', playlist, function(error) {
+        e.sender.send('save-playlist-reply', error);
+    });
+
+  });
+
+
 
   ipcMain.on('get-sequences-xlights', (e) => {
 
@@ -206,9 +193,6 @@ app.whenReady().then(() => {
 
   });
 
-  ipcMain.on('playlist', (e) => {
-    e.sender.send('playlist-reply', playlist);
-  });
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
@@ -227,25 +211,101 @@ app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit()
 });
 
+function Init() {
+    
+    CONFIG = storage.getSync('xv-scheduler-config');
+    PLAYLIST = storage.getSync('xv-scheduler-playlist');
+    SCHEDULE = storage.getSync('xv-scheduler-schedule');
+    console.log('local settings:',CONFIG, PLAYLIST, SCHEDULE);
+
+    
+    var schedules = storage.getSync('xv-scheduler-schedules');
+    if(schedules && schedules[0]) {
+        currSchedule = schedules[0];
+    }
+
+    CheckStatus();
+
+}
+
+function SavePlaylist(playlist, callback) {
+
+}
 
 function CheckStatus() {
 
     clearTimeout(checkTimer);
+
+    if(STATE == 'loading') {
+        loadingTimes++;
+
+        if(loadingTimes > 10) {
+            STATE = 'playing';
+        }
+    }
+
     GetStatus(function(response) {
 
-        console.log('Check Status Result:', response);
+        console.log('Current Response State:', response.status);
+        console.log('Current State:', STATE);
 
-        if(response.status == 'waiting' && state == 'playing') {            
-            currIndex = (currIndex + 1) % config.playlists[0].sequences.length;
+        if(response.status == 'playing' && STATE == 'loading') {
+            STATE = 'playing';
+        }
+
+        if(currSchedule.enabled) {
+
+            if(STATE == 'stopped') {
+                STATE = 'waiting';
+            }
+
+            var d = new Date();
+            var todayIndex = d.getDay();
+            var todayTime = d.toLocaleTimeString('en-GB');
+            console.log(todayTime);
+
+            if(currSchedule.daysOfWeek.includes(todayIndex)) {
+
+                if(todayTime > currSchedule.start + ":00" && todayTime < currSchedule.end + ":00") {
+
+                    if(STATE == 'waiting') {
+                        STATE = 'starting';
+                    } 
+                } else {
+                    STATE = 'waiting';
+                }
+
+            } else {
+               STATE = 'waiting';
+            }
+
+        
+        }
+
+
+
+        if(response.status == 'waiting' && (STATE == 'playing' || STATE == 'starting')) {
+
+            if(STATE == 'playing') {
+                currIndex = (currIndex + 1) % currPlaylist.length;
+            } else {
+                currIndex = 0;
+            }
+
+            STATE = 'loading';
+            loadingTimes = 0;
+
             PlayIndex(currIndex, function() {
-
+                checkTimer = setTimeout(CheckStatus, 10000);
             });
-            checkTimer = setTimeout(CheckStatus, 5000);
+        } else {
+
+            if(STATE != 'stopped') {
+                checkTimer = setTimeout(CheckStatus, 1000);
+            }
+
         }
 
-        if(state != 'stopped') {
-            checkTimer = setTimeout(CheckStatus, 1000);
-        }
 
     });
 
@@ -269,11 +329,10 @@ function GetStatus(callback) {
             responseObj.xlights.status = 'error';
          }
 
-        if(response && response.status == 'playing') {
-            state = 'playing';
+        if(response && response.status == 'playing' && currPlaylist && currPlaylist[currIndex]) {
             responseObj.status = 'playing';
             responseObj.currIndex = currIndex;
-            responseObj.sequenceName = config.playlists[0].sequences[currIndex].sequence.name;
+            responseObj.sequenceName = currPlaylist[currIndex].sequence.name;
             responseObj.xlights.status = 'playing';
         } 
 
@@ -281,11 +340,10 @@ function GetStatus(callback) {
 
             if(response) {
                 if(response.status == 'playing') {
-                    state = 'playing';
                     responseObj.status = 'playing';
                     responseObj.vixen.status = 'playing';
                     responseObj.currIndex = currIndex;
-                    responseObj.sequenceName = config.playlists[0].sequences[currIndex].sequence.name;
+                    responseObj.sequenceName = currPlaylist[currIndex].sequence.name;
                 }
             } else {
                 responseObj.vixen.errorMsg = 'Vixen status call failed.  Please make sure you have the correct host and port configured and your Vixen app is running.';
@@ -303,27 +361,32 @@ function GetStatus(callback) {
 
 function PlayIndex(idx, callback) {
 
-    state = 'loading';
-    var item = config.playlists[0].sequences[idx];
+    var item = storage.getSync('xv-scheduler-playlist')[idx];
     if(item) {
         switch(item.player) {
             case "xlights":
 
                 console.log('Turning off vixen.');
                 vixen.setActive(false, function(status) {
-                    console.log('Playing sequence ' + idx + ' on Xlights');
-                    xlights.play(item.sequence.data, function(response) {
-                        callback(response);
-                    });
+                    if(status) {
+                        console.log('Playing sequence ' + idx + ' on Xlights');
+                        xlights.play(item.sequence.data, function(response) {
+
+                            callback(response);
+                        });
+                    }
                 });
                 break;
             case "vixen":
                 console.log('Turning off Xlights.');
                 xlights.setActive(false, function(status) {
-                    console.log('Playing sequence ' + idx + ' on Vixen');
-                    vixen.play(item.sequence.data, function(response) {
-                        callback(response);
-                    });
+                    if(status) {
+                        console.log('Playing sequence ' + idx + ' on Vixen');
+                        vixen.play(item.sequence.data, function(response) {
+                            STATE = 'playing';
+                            callback(response);
+                        });
+                    }
                 });
                 break;
         }

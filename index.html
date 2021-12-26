@@ -3,15 +3,41 @@
   <head>
     <meta charset="UTF-8">
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; font-src 'self' data:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; font-src 'self' data:;">
     <title>XV Scheduler</title>
     <link href="node_modules/@huseyinkozan/fomantic-ui-css-offline/dist/semantic.min.css" rel="stylesheet">
+    <link href="node_modules/timepicker/jquery.timepicker.min.css" rel="stylesheet">
     <script src="node_modules/jquery/dist/jquery.min.js"></script>
     <script src="node_modules/fomantic-ui/dist/semantic.min.js"></script>
     <script src="node_modules/sortablejs/Sortable.min.js"></script>
+    <script src="node_modules/timepicker/jquery.timepicker.min.js"></script>
+    <script src="node_modules/handlebars/dist/handlebars.min.js"></script>
     <link href="./styles.css" rel="stylesheet">
+    <script>
+      Handlebars.registerHelper('json', function(context) {
+          return encodeURIComponent(JSON.stringify(context));
+      });
+    </script>
   </head>
   <body>
+    <script id="sequence-template" type="text/x-handlebars-template">
+      {{#each this}}
+      <tr data-type="{{player}}" data-sequence="{{{json this}}}" data-index="{{@index}}">
+        <td class="sequence-entry">
+            <div class="ui mini circular compact button right floated icon delete">
+              <i class="icon trash"></i>
+            </div>
+            <div class="ui mini circular compact button right floated icon add">
+              <i class="icon plus"></i>
+            </div>
+            <div class="ui middle aligned content">
+              <span class="playing"></span>
+              {{sequence.name}}
+            </div>
+        </td>
+      </tr>
+      {{/each}}
+    </script>
 
 
     <div>
@@ -31,17 +57,14 @@
                 </h4>
               </div>
               
-              <div>
-                <table class="ui grey selectable inverted table">
-                  <thead>
-                    <tr>
-                      <th>Available Sequences</th>
-                    </tr>
-                  </thead>
-                  <tbody id="VixenSequences">
-                  </tbody>
-                </table>
-              </div>
+              <table class="ui grey selectable inverted table">
+                <thead>
+                  <tr>
+                    <th colspan="3">Available Sequences</th>
+                  </tr>
+                </thead>
+                <tbody id="VixenSequences" class="ui inverted selection items available"></tbody>
+              </table>
 
             </div>
           </div>
@@ -61,7 +84,7 @@
                 <table class="ui grey selectable inverted table">
                   <thead>
                     <tr>
-                      <th>Available Sequences</th>
+                      <th colspan="3">Available Sequences</th>
                     </tr>
                   </thead>
                   <!--
@@ -70,9 +93,10 @@
                       <td><i class="volume up icon"></i> Sequence 1</td> 
                     </tr>
 
-                  -->
-                  <tbody id="XlightsSequences"></tbody>
+                  -->                  
+                  <tbody id="XlightsSequences" class="ui inverted selection items available"></tbody>
                 </table>
+                
 
               </div>
 
@@ -81,28 +105,76 @@
           </div>
           <div class="right floated column">
 
-            <table class="ui blue selectable inverted table">
-              <thead>
-                <tr>
-                  <th>My Playlist</th>
-                </tr>
-              </thead>
-              <tbody id="Playlist">
-              </tbody>
-            </table>
-            <button id="Start">Start Playlist</button>
+            <div class="ui segment">
+              <div id="PlaylistHeader" class="ui grey inverted segment">
+                <h4 class="ui inverted header">
+                  <div class="content">
+                    Playlist Controller
+                    <div class="sub header small">Status: <span id="PlaylistStatus">idle</span></div>
+                  </div>
+                </h4>
+              </div>
+              
+                <div id="PlaylistSchedule" class="ui grey inverted segment">
+                  <h4 class="ui inverted header">
+                    
+                    <div class="content">
+                      Playlist Schedule:
+                      <div class="sub header small">Status: <span id="SchedulerStatus">off</span></div>
+                    </div>
+                  </h4>
+                  <div id="ScheduleEditor">
+                    <p>
+                      <span id="Day0" data-index="0" class="ui text small day-button">S</span>
+                      <span id="Day1" data-index="1" class="ui text small day-button">M</span>
+                      <span id="Day2" data-index="2" class="ui text small day-button">T</span>
+                      <span id="Day3" data-index="3" class="ui text small day-button">W</span>
+                      <span id="Day4" data-index="4" class="ui text small day-button">T</span>
+                      <span id="Day5" data-index="5" class="ui text small day-button">F</span>
+                      <span id="Day6" data-index="6" class="ui text small day-button">S</span>
+                    </p>
+                    <div class="ui inverted mini input">
+                      <input type="text" value="5:00pm" maxlength="7" placeholder="Start" class="scheduler-input" id="ScheduleStart" />
+                      <input type="text" value="10:00pm" placeholder="End" maxlength="7" class="scheduler-input" id="ScheduleEnd" /> 
+                    </div>
+                  </div>
+                  
+                  <p>
+                    <div class="ui toggle inverted checkbox">
+                      <input type="checkbox" id="ScheduleEnabled">
+                      <label>Enabled</label>
+                    </div>
+                  </p>                  
+                </div>
+    
+                <table id="PlaylistContainer" class="ui grey selectable inverted table">
+                  <thead>
+                    <tr>
+                      <th colspan="3">Current Playlist</th>
+                    </tr>
+                  </thead>
+                  <tbody id="Playlist" class="ui inverted selection items">
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td>
+                        <div id="ClearPlaylist" class="ui mini compact button left floated">Clear</div>
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+               
 
-            <button id="GlobalStatus">Global Status</button>
-            <button id="XlightsStatus">Xlight Status</button>
-        
-            <button id="VixenStatus">Vixen Status</button>
-        
-            <button id="GetPlaylist">Get Playlist</button>
 
           </div>
         </div>
       </div>
 
+
+      <button id="Start">Start Playlist</button>
+      <button id="GlobalStatus">Global Status</button>
+          
+      <button id="GetPlaylist">Get Playlist</button>
     </div>
     <script src="./index.js"></script>
     <script src="./renderer.js"></script>

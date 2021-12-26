@@ -104,7 +104,10 @@ function getSequences(callback) {
                         player: 'xlights',
                         sequence: {
                             name: sequence.name,
-                            data: sequence
+                            data: {
+                                showid: sequence.showid,
+                                stepid: sequence.id
+                            }
                         }
                     });
                 });
@@ -127,9 +130,12 @@ async function getShows(playlists) {
             callback(showResponse ? showResponse.steps : false);
         });*/
         const res = await fetch('http://' + Hostname + ':' + Port + XlightsGetStepsPath + playlists[idx].name);  // have to do this for async
-        const json = await res.json()
+        const json = await res.json();
         if(json.steps) {
-            retObj.push(...json.steps);
+            json.steps.forEach(function(step) {
+                step.showid = playlists[idx].id;
+                retObj.push(step);
+            });
         }
 //       console.log(retObj);
     };

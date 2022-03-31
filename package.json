@@ -19,7 +19,7 @@
   "author": "Jesse McCabe",
   "license": "CC0-1.0",
   "devDependencies": {
-    "electron": "^16.0.2"
+    "electron": "^18.0.1"
   },
   "dependencies": {
     "@huseyinkozan/fomantic-ui-css-offline": "^2.8.8",

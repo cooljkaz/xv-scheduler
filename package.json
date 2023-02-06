@@ -25,7 +25,7 @@
     "@huseyinkozan/fomantic-ui-css-offline": "^2.8.8",
     "electron-fetch": "^1.7.4",
     "electron-json-storage": "^4.5.0",
-    "fomantic-ui": "^2.8.8",
+    "fomantic-ui": "^2.9.2",
     "get-google-fonts": "^1.2.2",
     "handlebars": "^4.7.7",
     "jquery": "^3.6.0",

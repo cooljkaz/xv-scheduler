@@ -28,7 +28,7 @@
     "fomantic-ui": "^2.8.8",
     "get-google-fonts": "^1.2.2",
     "handlebars": "^4.7.7",
-    "jquery": "^3.6.0",
+    "jquery": "^3.6.4",
     "sortablejs": "^1.14.0",
     "timepicker": "^1.13.18"
   }
